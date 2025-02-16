@@ -9,8 +9,6 @@
 
 <body>
     <h1>Audio Player Demo</h1>
-    <audio id="audio-player" controls></audio>
-
     <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
          style="background: transparent; background-color: transparent;"
          version="1.1" width="794px" height="642px" viewBox="-0.5 -0.5 794 642">
@@ -584,14 +582,49 @@
     </svg>
 
     <script>
-        const audioPlayer = document.getElementById('audio-player');
+
+// 预加载管理器
+const audioPreloader = {
+  // 存储所有音频对象的 Map
+  cache: new Map(),
+
+  // 预加载函数
+  async preloadAll(audioList) {
+    await Promise.all(
+      audioList.map(name => {
+        return new Promise((resolve, reject) => {
+          const audio = new Audio(`./dan/${name}`); // 注意：此处不要立即调用 play()
+          audio.preload = "auto"; // 强制浏览器预加载
+          
+          audio.addEventListener('loadeddata', () => resolve(audio));
+          audio.addEventListener('error', (e) => reject(e));
+          
+          // 重要：触发加载动作（部分浏览器需要）
+          audio.load();
+        });
+      })
+    ).then(audios => {
+      audios.forEach((audio, index) => {
+        this.cache.set(audioList[index], audio);
+      });
+    });
+  },
+
+  // 播放函数
+  play(name) {
+    const audio = this.cache.get(name);
+    if (audio) {
+      audio.currentTime = 0; // 重置播放进度
+      audio.play();
+      return audio;
+    }
+    return null;
+  }
+};
         const files = ['01-ni.wav', '02-shuo.wav', '03-ni.wav', '04-bu.wav', '05-xiang.wav', '06-zaizheli.wav', '07-wo.wav', '08-ye.wav', '09-bu.wav', '10-xiang.wav', '11-zaizheli.wav', '12-dantianheidetaikuai.wav', '13-xiang.wav', '14-zouzaojiulai.wav', '15-bu.wav', '16-ji.wav', '17-oh.wav', '18-wo.wav', '19-ai.wav', '20-ni.wav', '21-kexi.wav', '22-guanxi.wav', '23-biancheng.wav', '24-mei.wav', '25-guanxi.wav', '26-wenti.wav', '27-shi.wav', '28-mei.wav', '29-wenti.wav', '30-yu.wav', '31-shi.wav', '32-wo.wav', '33-menjixu.wav'];
 
-        // Preload audio files
-        const audioFiles = files.map(file => {
-            const audio = new Audio(`./dan/${file}`);
-            audio.preload = 'auto';
-            return audio;
+        audioPreloader.preloadAll(files).then(() => {
+            console.log('所有音频预加载完成！');
         });
 
         const graph = document.querySelector("body > svg > g > g > g");
@@ -609,8 +642,7 @@
                 return;
             }
             node.addEventListener('click', () => {   
-                audioPlayer.src = `./dan/${audioName}`;
-                audioPlayer.play();
+                audioPreloader.play(audioName);
             });
         });
     </script>
