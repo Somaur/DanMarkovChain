@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Player Demo</title>
+</head>
+<body>
+    <h1>Audio Player Demo</h1>
+    <div id="buttons-container"></div>
+    <audio id="audio-player" controls></audio>
+
+    <script>
+        const audioPlayer = document.getElementById('audio-player');
+        const buttonsContainer = document.getElementById('buttons-container');
+        const files = ['01-ni.wav', '02-shuo.wav', '03-ni.wav', '04-bu.wav', '05-xiang.wav', '06-zaizheli.wav', '07-wo.wav', '08-ye.wav', '09-bu.wav', '10-xiang.wav', '11-zaizheli.wav', '12-dantianheidetaikuai.wav', '13-xiang.wav', '14-zouzaojiulai.wav', '15-bu.wav', '16-ji.wav', '17-oh.wav', '18-wo.wav', '19-ai.wav', '20-ni.wav', '21-kexi.wav', '22-guanxi.wav', '23-biancheng.wav', '24-mei.wav', '25-guanxi.wav', '26-wenti.wav', '27-shi.wav', '28-mei.wav', '29-wenti.wav', '30-yu.wav', '31-shi.wav', '32-wo.wav', '33-menjixu.wav'];
+        
+        for (let i = 1; i <= 33; i++) {
+            const button = document.createElement('button');
+            button.textContent = `Play Audio ${files[i - 1]}`;
+            button.addEventListener('click', () => {
+                audioPlayer.src = `./dan/${files[i - 1]}`;
+                audioPlayer.play();
+            });
+            buttonsContainer.appendChild(button);
+        }
+    </script>
+</body>
+</html>
