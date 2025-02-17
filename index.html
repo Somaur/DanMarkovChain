@@ -770,46 +770,48 @@ const state = {
             return;
         }
 
-        const audioToPlay = node.audios.find(audio => {
+        let audioToPlay = node.audios.find(audio => {
             if (audio.lastNode && this.lastNode !== audio.lastNode) return false;
             if (audio.needFlag && this.flag !== audio.needFlag) return false;
             return true;
         });
+        if (!audioToPlay) {
+            console.log(`[!] No suitable audio found for node ${nodeKey}, use the last one`);
+            audioToPlay = node.audios[node.audios.length - 1];
+        }
 
-        if (audioToPlay) {
-            this.isPlaying = true;
-            this.playingNode = nodeKey;
-            this.lastNode = nodeKey;
+        this.isPlaying = true;
+        this.playingNode = nodeKey;
+        this.lastNode = nodeKey;
 
-            if (audioToPlay.setFlag) {
-                this.flag = audioToPlay.setFlag;
-            }
+        if (audioToPlay.setFlag) {
+            this.flag = audioToPlay.setFlag;
+        }
 
-            if (node.element) {
-                node.element.querySelector('rect').style.fill = '#90EE90';
-            }
+        if (node.element) {
+            node.element.querySelector('rect').style.fill = '#90EE90';
+        }
 
-            const audio = audioPreloader.play(audioToPlay.name);
-            if (audio) {
-                const handleAudioEnd = () => {
-                    audio.removeEventListener('ended', handleAudioEnd);
-                    node.element.querySelector('rect').style.fill = '#FFFFFF';
-                    
-                    this.isPlaying = false;
-                    this.playingNode = null;
+        const audio = audioPreloader.play(audioToPlay.name);
+        if (audio) {
+            const handleAudioEnd = () => {
+                audio.removeEventListener('ended', handleAudioEnd);
+                node.element.querySelector('rect').style.fill = '#FFFFFF';
+                
+                this.isPlaying = false;
+                this.playingNode = null;
 
-                    if (node.nexts.length === 0) {
-                        console.log(`[!] End of the line`);
-                        return;
-                    } else {
-                        const nextNodeKey = node.nexts[Math.floor(Math.random() * node.nexts.length)];
-                        this.activateNode(nextNodeKey);
-                    }
-                };
-                audio.addEventListener('ended', handleAudioEnd);
-            }
+                if (node.nexts.length === 0) {
+                    console.log(`[!] End of the line`);
+                    return;
+                } else {
+                    const nextNodeKey = node.nexts[Math.floor(Math.random() * node.nexts.length)];
+                    this.activateNode(nextNodeKey);
+                }
+            };
+            audio.addEventListener('ended', handleAudioEnd);
         } else {
-            console.log(`[!] No suitable audio found for node ${nodeKey}`);
+            console.error(`[!] Failed to play audio for node ${nodeKey}`);
         }
     },
 }
@@ -838,7 +840,7 @@ const state = {
                 return;
             }
             node.addEventListener('click', () => {   
-                audioPreloader.play(audioName);
+                state.activateNode(node.id);
             });
         });
     </script>
