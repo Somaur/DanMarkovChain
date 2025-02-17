@@ -588,18 +588,16 @@ const audioPreloader = {
   // 存储所有音频对象的 Map
   cache: new Map(),
 
-  // 预加载函数
   async preloadAll(audioList) {
     await Promise.all(
       audioList.map(name => {
         return new Promise((resolve, reject) => {
-          const audio = new Audio(`./dan/${name}`); // 注意：此处不要立即调用 play()
-          audio.preload = "auto"; // 强制浏览器预加载
+          const audio = new Audio(`./dan/${name}`);
+          audio.preload = "auto";
           
           audio.addEventListener('loadeddata', () => resolve(audio));
           audio.addEventListener('error', (e) => reject(e));
           
-          // 重要：触发加载动作（部分浏览器需要）
           audio.load();
         });
       })
@@ -610,17 +608,212 @@ const audioPreloader = {
     });
   },
 
-  // 播放函数
   play(name) {
     const audio = this.cache.get(name);
     if (audio) {
-      audio.currentTime = 0; // 重置播放进度
+      audio.currentTime = 0;
       audio.play();
       return audio;
     }
     return null;
   }
 };
+
+const state = {
+    isPlaying: false,
+    playingNode: null,
+    lastNode: null,
+    flag: 0,
+    nodes: {
+        "ni": {
+            audios: [
+                {name: "03-ni.wav", lastNode: "shuo"},
+                {name: "20-ni.wav", lastNode: "ai"},
+                {name: "01-ni.wav", lastNode: null},
+            ],
+            nexts: ["shuo", "bu", "kexi"]
+        },
+        "shuo": {
+            audios: [{name: "02-shuo.wav", lastNode: "ni"}],
+            nexts: ["ni"]
+        },
+        "bu": {
+            audios: [
+                {name: "04-bu.wav", lastNode: "ni", setFlag: 1},
+                {name: "09-bu.wav", lastNode: "ye"},
+                {name: "15-bu.wav", lastNode: "zouzaojiulai"},
+            ],
+            nexts: ["xiang", "ji"]
+        },
+        "xiang": {
+            audios: [
+                {name: "05-xiang.wav", lastNode: "bu", needFlag: 1},
+                {name: "10-xiang.wav", lastNode: "bu", needFlag: 2},
+                {name: "13-xiang.wav", lastNode: "dantianheidetaikuai"}
+            ],
+            nexts: ["zaizheli", "zouzaojiulai"]
+        },
+        "zaizheli": {
+            audios: [
+                {name: "06-zaizheli.wav", lastNode: "xiang", needFlag: 1},
+                {name: "11-zaizheli.wav", lastNode: "xiang", needFlag: 2}
+            ],
+            nexts: ["wo", "dantianheidetaikuai"]
+        },
+        "wo": {
+            audios: [
+                {name: "07-wo.wav", lastNode: "zaizheli"},
+                {name: "18-wo.wav", lastNode: "oh"},
+                {name: "32-wo.wav", lastNode: "shi"}
+            ],
+            nexts: ["ye", "ai", "menjixu"]
+        },
+        "ye": {
+            audios: [
+                {name: "08-ye.wav", lastNode: "wo", setFlag: 2}
+            ],
+            nexts: ["bu"]
+        },
+        "dantianheidetaikuai": {
+            audios: [
+                {name: "12-dantianheidetaikuai.wav", lastNode: "zaizheli"}
+            ],
+            nexts: ["xiang"]
+        },
+        "zouzaojiulai": {
+            audios: [
+                {name: "14-zouzaojiulai.wav", lastNode: "xiang"}
+            ],
+            nexts: ["bu"]
+        },
+        "ji": {
+            audios: [
+                {name: "16-ji.wav", lastNode: "bu"}
+            ],
+            nexts: ["oh"]
+        },
+        "oh": {
+            audios: [
+                {name: "17-oh.wav", lastNode: "ji"}
+            ],
+            nexts: ["wo"]
+        },
+        "ai": {
+            audios: [
+                {name: "19-ai.wav", lastNode: "wo"}
+            ],
+            nexts: ["ni"]
+        },
+        "kexi": {
+            audios: [
+                {name: "21-kexi.wav", lastNode: "ni"}
+            ],
+            nexts: ["guanxi"]
+        },
+        "guanxi": {
+            audios: [
+                {name: "22-guanxi.wav", lastNode: "kexi"},
+                {name: "25-guanxi.wav", lastNode: "mei"}
+            ],
+            nexts: ["biancheng", "wenti"]
+        },
+        "biancheng": {
+            audios: [
+                {name: "23-biancheng.wav", lastNode: "guanxi"}
+            ],
+            nexts: ["mei"]
+        },
+        "mei": {
+            audios: [
+                {name: "24-mei.wav", lastNode: "biancheng"},
+                {name: "28-mei.wav", lastNode: "shi"}
+            ],
+            nexts: ["guanxi", "wenti"]
+        },
+        "wenti": {
+            audios: [
+                {name: "26-wenti.wav", lastNode: "guanxi"},
+                {name: "29-wenti.wav", lastNode: "mei"}
+            ],
+            nexts: ["shi", "yu"]
+        },
+        "shi": {
+            audios: [
+                {name: "27-shi.wav", lastNode: "wenti"},
+                {name: "31-shi.wav", lastNode: "yu"}
+            ],
+            nexts: ["mei", "wo"]
+        },
+        "yu": {
+            audios: [
+                {name: "30-yu.wav", lastNode: "wenti"}
+            ],
+            nexts: ["shi"]
+        },
+        "menjixu": {
+            audios: [
+                {name: "33-menjixu.wav", lastNode: "wo"}
+            ],
+            nexts: []
+        }
+    },
+
+    activateNode(nodeKey) {
+        const node = this.nodes[nodeKey];
+        if (!node) {
+            console.error(`[!] Node ${nodeKey} not found`);
+            return;
+        }
+
+        if (this.isPlaying) {
+            console.log(`[!] Already playing`);
+            return;
+        }
+
+        const audioToPlay = node.audios.find(audio => {
+            if (audio.lastNode && this.lastNode !== audio.lastNode) return false;
+            if (audio.needFlag && this.flag !== audio.needFlag) return false;
+            return true;
+        });
+
+        if (audioToPlay) {
+            this.isPlaying = true;
+            this.playingNode = nodeKey;
+            this.lastNode = nodeKey;
+
+            if (audioToPlay.setFlag) {
+                this.flag = audioToPlay.setFlag;
+            }
+
+            if (node.element) {
+                node.element.querySelector('rect').style.fill = '#90EE90';
+            }
+
+            const audio = audioPreloader.play(audioToPlay.name);
+            if (audio) {
+                const handleAudioEnd = () => {
+                    audio.removeEventListener('ended', handleAudioEnd);
+                    node.element.querySelector('rect').style.fill = '#FFFFFF';
+                    
+                    this.isPlaying = false;
+                    this.playingNode = null;
+
+                    if (node.nexts.length === 0) {
+                        console.log(`[!] End of the line`);
+                        return;
+                    } else {
+                        const nextNodeKey = node.nexts[Math.floor(Math.random() * node.nexts.length)];
+                        this.activateNode(nextNodeKey);
+                    }
+                };
+                audio.addEventListener('ended', handleAudioEnd);
+            }
+        } else {
+            console.log(`[!] No suitable audio found for node ${nodeKey}`);
+        }
+    },
+}
+
         const files = ['01-ni.wav', '02-shuo.wav', '03-ni.wav', '04-bu.wav', '05-xiang.wav', '06-zaizheli.wav', '07-wo.wav', '08-ye.wav', '09-bu.wav', '10-xiang.wav', '11-zaizheli.wav', '12-dantianheidetaikuai.wav', '13-xiang.wav', '14-zouzaojiulai.wav', '15-bu.wav', '16-ji.wav', '17-oh.wav', '18-wo.wav', '19-ai.wav', '20-ni.wav', '21-kexi.wav', '22-guanxi.wav', '23-biancheng.wav', '24-mei.wav', '25-guanxi.wav', '26-wenti.wav', '27-shi.wav', '28-mei.wav', '29-wenti.wav', '30-yu.wav', '31-shi.wav', '32-wo.wav', '33-menjixu.wav'];
 
         audioPreloader.preloadAll(files).then(() => {
@@ -630,6 +823,9 @@ const audioPreloader = {
         const graph = document.querySelector("body > svg > g > g > g");
         graph.querySelectorAll('[id]').forEach(node => {
             console.log(node.id);
+
+            // 把DOM图形节点绑定到对应的节点对象上
+            state.nodes[node.id].element = node;
 
             let audioName = "";
             files.forEach(file => {
@@ -646,6 +842,7 @@ const audioPreloader = {
             });
         });
     </script>
+    <button onclick="state.activateNode('ni')">OTTO</button>
 </body>
 
 </html>
