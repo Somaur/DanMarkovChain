@@ -783,6 +783,7 @@ const state = {
         this.isPlaying = true;
         this.playingNode = nodeKey;
         this.lastNode = nodeKey;
+        this.playedKeys.add(nodeKey);
 
         if (audioToPlay.setFlag) {
             this.flag = audioToPlay.setFlag;
@@ -790,6 +791,21 @@ const state = {
 
         if (node.element) {
             node.element.querySelector('rect').style.fill = '#90EE90';
+            node.element.querySelector('rect').style.stroke = '#909090';
+        }
+
+        let nextNodeKey = null;
+        if (node.nexts.length === 0) {
+            console.log(`[!] End of the line`);
+        } else {
+            nextNodeKey = node.nexts[Math.floor(Math.random() * node.nexts.length)];
+            if (this.blockFinalUntilAllPlayed && this.playedKeys.size < Object.keys(this.nodes).length - 1) {
+                while (nextNodeKey === this.FinalNodeKey) {
+                    nextNodeKey = node.nexts[Math.floor(Math.random() * node.nexts.length)];
+                    console.log(`[!] Blocked final node ${this.FinalNodeKey}`);
+                }
+            }
+            this.nodes[nextNodeKey].element.querySelector('rect').style.fill = '#EEEE90';
         }
 
         const audio = audioPreloader.play(audioToPlay.name);
@@ -801,50 +817,68 @@ const state = {
                 this.isPlaying = false;
                 this.playingNode = null;
 
-                if (node.nexts.length === 0) {
-                    console.log(`[!] End of the line`);
-                    return;
-                } else {
-                    const nextNodeKey = node.nexts[Math.floor(Math.random() * node.nexts.length)];
+                if (nextNodeKey) {
                     this.activateNode(nextNodeKey);
-                }
+                }                
             };
             audio.addEventListener('ended', handleAudioEnd);
         } else {
             console.error(`[!] Failed to play audio for node ${nodeKey}`);
         }
     },
+
+    blockFinalUntilAllPlayed: false,
+    FinalNodeKey: "menjixu",
+    playedKeys: new Set(),
 }
 
-        const files = ['01-ni.wav', '02-shuo.wav', '03-ni.wav', '04-bu.wav', '05-xiang.wav', '06-zaizheli.wav', '07-wo.wav', '08-ye.wav', '09-bu.wav', '10-xiang.wav', '11-zaizheli.wav', '12-dantianheidetaikuai.wav', '13-xiang.wav', '14-zouzaojiulai.wav', '15-bu.wav', '16-ji.wav', '17-oh.wav', '18-wo.wav', '19-ai.wav', '20-ni.wav', '21-kexi.wav', '22-guanxi.wav', '23-biancheng.wav', '24-mei.wav', '25-guanxi.wav', '26-wenti.wav', '27-shi.wav', '28-mei.wav', '29-wenti.wav', '30-yu.wav', '31-shi.wav', '32-wo.wav', '33-menjixu.wav'];
+const files = ['01-ni.wav', '02-shuo.wav', '03-ni.wav', '04-bu.wav', '05-xiang.wav', '06-zaizheli.wav', '07-wo.wav', '08-ye.wav', '09-bu.wav', '10-xiang.wav', '11-zaizheli.wav', '12-dantianheidetaikuai.wav', '13-xiang.wav', '14-zouzaojiulai.wav', '15-bu.wav', '16-ji.wav', '17-oh.wav', '18-wo.wav', '19-ai.wav', '20-ni.wav', '21-kexi.wav', '22-guanxi.wav', '23-biancheng.wav', '24-mei.wav', '25-guanxi.wav', '26-wenti.wav', '27-shi.wav', '28-mei.wav', '29-wenti.wav', '30-yu.wav', '31-shi.wav', '32-wo.wav', '33-menjixu.wav'];
 
-        audioPreloader.preloadAll(files).then(() => {
-            console.log('所有音频预加载完成！');
-        });
+audioPreloader.preloadAll(files).then(() => {
+    console.log('所有音频预加载完成！');
+});
 
-        const graph = document.querySelector("body > svg > g > g > g");
-        graph.querySelectorAll('[id]').forEach(node => {
-            console.log(node.id);
+const graph = document.querySelector("body > svg > g > g > g");
+graph.querySelectorAll('[id]').forEach(node => {
+    console.log(node.id);
 
-            // 把DOM图形节点绑定到对应的节点对象上
-            state.nodes[node.id].element = node;
+    // 把DOM图形节点绑定到对应的节点对象上
+    state.nodes[node.id].element = node;
 
-            let audioName = "";
-            files.forEach(file => {
-                if (file.includes(node.id + ".wav")) {
-                    audioName = file;
-                }
-            });
-            if (audioName === "") {
-                console.log(`[!] No audio file found for node ${node.id}`);
-                return;
-            }
-            node.addEventListener('click', () => {   
-                state.activateNode(node.id);
-            });
-        });
+    let audioName = "";
+    files.forEach(file => {
+        if (file.includes(node.id + ".wav")) {
+            audioName = file;
+        }
+    });
+    if (audioName === "") {
+        console.log(`[!] No audio file found for node ${node.id}`);
+        return;
+    }
+    node.addEventListener('click', () => {   
+        state.activateNode(node.id);
+    });
+});
+
+const entryPoints = {
+    normalRandomPlay() {
+        state.activateNode('ni');
+    },
+    blockFinalUntilAllPlayed() {
+        state.blockFinalUntilAllPlayed = true;
+        state.activateNode('ni');
+    }
+} 
     </script>
-    <button onclick="state.activateNode('ni')">OTTO</button>
+    <br/>
+    <p>
+        <button onclick="entryPoints.normalRandomPlay()">OTTO</button>
+        纯粹随机
+    </p>
+    <p>
+        <button onclick="entryPoints.blockFinalUntilAllPlayed()">OTTO-BLOCK</button>
+        最后一个节点会被阻塞，直到所有节点都被播放过一次
+    </p>
 </body>
 
 </html>
