@@ -1214,9 +1214,9 @@ function init() {
 }
 
 function reinit() {
-    // audioPreloader.preloadAll(files).catch(e => {
-    //     console.error(`[!] Failed to preload audio files: ${e}`);
-    // });
+    audioPreloader.preloadAll(files).catch(e => {
+        console.error(`[!] Failed to preload audio files: ${e}`);
+    });
 
     state.isPlaying = false;
     state.playingNode = null;
